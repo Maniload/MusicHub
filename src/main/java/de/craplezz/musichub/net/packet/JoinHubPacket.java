@@ -2,7 +2,9 @@ package de.craplezz.musichub.net.packet;
 
 import de.craplezz.musichub.net.Packet;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.UUID;
 
 public class JoinHubPacket extends Packet {

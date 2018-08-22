@@ -1,7 +1,5 @@
 package de.craplezz.musichub.net.packet;
 
-import de.craplezz.musichub.components.Role;
-import de.craplezz.musichub.components.User;
 import de.craplezz.musichub.net.Packet;
 
 import java.io.DataInputStream;
@@ -10,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 public class UpdateEntryListPacket extends Packet {
 

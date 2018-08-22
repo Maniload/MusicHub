@@ -1,8 +1,6 @@
 package de.craplezz.musichub.net.packet;
 
 import de.craplezz.musichub.components.Hub;
-import de.craplezz.musichub.components.Role;
-import de.craplezz.musichub.components.User;
 import de.craplezz.musichub.net.Packet;
 
 import java.io.DataInputStream;

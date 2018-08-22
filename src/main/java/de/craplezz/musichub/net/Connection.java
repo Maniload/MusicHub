@@ -1,7 +1,5 @@
 package de.craplezz.musichub.net;
 
-import de.craplezz.musichub.net.packet.CreateHubPacket;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.Socket;
