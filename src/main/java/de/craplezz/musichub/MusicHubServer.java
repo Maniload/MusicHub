@@ -1,6 +1,7 @@
 package de.craplezz.musichub;
 
 import de.craplezz.musichub.components.*;
+import de.craplezz.musichub.media.MediaServer;
 import de.craplezz.musichub.net.Connection;
 import de.craplezz.musichub.net.Packet;
 import de.craplezz.musichub.net.packet.*;
@@ -213,10 +214,21 @@ public class MusicHubServer {
                     }
 
                 }).start();
+
+                new Thread(() -> {
+
+                    MediaServer mediaServer = new MediaServer(this);
+                    mediaServer.start();
+
+                }).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public Hub getHub(UUID uniqueId) {
+        return hubs.get(uniqueId);
     }
 
     private Hub getHubByUser(User user) {

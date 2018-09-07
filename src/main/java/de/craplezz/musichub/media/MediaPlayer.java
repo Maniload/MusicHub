@@ -1,109 +1,63 @@
 package de.craplezz.musichub.media;
 
+import de.craplezz.musichub.components.Hub;
+import de.craplezz.musichub.util.IOUtils;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
 
 import java.io.*;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.*;
 
 public class MediaPlayer {
 
-    private final ExecutorService executor = Executors.newCachedThreadPool();
-
-    private final Listener listener;
+    private final Hub hub;
 
     private Player player;
-    private BlockingQueue<String> urlQueue = new LinkedBlockingQueue<>();
-    private Map<String, Future<ByteArrayInputStream>> preLoadedData = new ConcurrentHashMap<>();
 
-    public MediaPlayer(Listener listener) {
-        this.listener = listener;
+    public MediaPlayer(Hub hub) {
+        this.hub = hub;
     }
 
-    public void append(String url) {
-        preLoadedData.put(url, executor.submit(() -> fetchData(url)));
+    public void connect() {
+        new Thread(() -> {
 
-        urlQueue.add(url);
-    }
+            try {
+                Socket socket = new Socket("localhost", 8081);
 
-    public void remove(String url) {
-        preLoadedData.remove(url);
+                DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
+                outputStream.writeLong(hub.getHostUserUniqueId().getLeastSignificantBits());
+                outputStream.writeLong(hub.getHostUserUniqueId().getMostSignificantBits());
 
-        urlQueue.remove(url);
+                while (true) {
+                    try {
+                        ByteArrayOutputStream bufferOut = new ByteArrayOutputStream();
+                        IOUtils.copy(socket.getInputStream(), bufferOut);
+                        player = new Player(new ByteArrayInputStream(bufferOut.toByteArray()));
+                        player.play();
+                    } catch (JavaLayerException e) {
+                        e.printStackTrace();
+                    } finally {
+                        if (player != null) {
+                            player.close();
+                        }
+                    }
+
+                    outputStream.writeByte((byte) 1);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }).start();
     }
 
     public void skip() {
         if (player != null) {
             player.close();
         }
-    }
-
-    public void play() throws InterruptedException {
-        while (true) {
-            String url = urlQueue.take();
-            listener.onPlayerStart(url);
-            try {
-                System.out.println("Starting to play " + url);
-                long time = System.currentTimeMillis();
-                player = new Player(preLoadedData.remove(url).get());
-                System.out.println("Started playing after " + (System.currentTimeMillis() - time) + " ms");
-                player.play();
-                player.close();
-            } catch (JavaLayerException | ExecutionException e) {
-                e.printStackTrace();
-            }
-            listener.onPlayerFinish(url);
-        }
-    }
-
-    private ByteArrayInputStream fetchData(String url) throws IOException {
-        Process downloadProcess = new ProcessBuilder()
-                .command(("youtube-dl -f bestaudio -o - " + url).split(" "))
-                .redirectInput(ProcessBuilder.Redirect.PIPE)
-                .start();
-
-        Process encodeProcess = new ProcessBuilder()
-                .command("ffmpeg -i pipe: -f mp3 pipe:1".split(" "))
-                .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                .redirectInput(ProcessBuilder.Redirect.PIPE)
-                .start();
-
-        executor.execute(() -> {
-
-            try {
-                copy(downloadProcess.getInputStream(), encodeProcess.getOutputStream());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        });
-
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        copy(encodeProcess.getInputStream(), outputStream);
-
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-        outputStream.close();
-
-        return inputStream;
-    }
-
-    private void copy(InputStream in, OutputStream out) throws IOException {
-        byte[] buffer = new byte[8096];
-        int bytesRead;
-        while ((bytesRead = in.read(buffer)) >= 0) {
-            out.write(buffer, 0, bytesRead);
-            out.flush();
-        }
-        out.close();
-    }
-
-    public interface Listener {
-
-        void onPlayerStart(String url);
-
-        void onPlayerFinish(String url);
-
     }
 
 }

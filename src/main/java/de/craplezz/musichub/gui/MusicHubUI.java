@@ -42,7 +42,7 @@ public class MusicHubUI extends JFrame {
     private JPanel userListTab;
 
     private Hub requestedHub;
-    private final MediaPlayer mediaPlayer;
+    private MediaPlayer mediaPlayer;
     private Map<String, Entry> entries = new HashMap<>();
 
     public MusicHubUI(Connection connection) throws HeadlessException {
@@ -52,26 +52,26 @@ public class MusicHubUI extends JFrame {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setContentPane(contentPane);
 
-        mediaPlayer = new MediaPlayer(new MediaPlayer.Listener() {
-
-            @Override
-            public void onPlayerStart(String url) {
-                try {
-                    connection.sendPacket(new UpdateEntryListPacket(new UpdateEntryListPacket.Change(
-                            UpdateEntryListPacket.Change.Mode.NOW_PLAYING,
-                            url
-                    )));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            @Override
-            public void onPlayerFinish(String url) {
-                nowPlayingTextField.setText(null);
-            }
-
-        });
+//        mediaPlayer = new MediaPlayer(new MediaPlayer.Listener() {
+//
+//            @Override
+//            public void onPlayerStart(String url) {
+//                try {
+//                    connection.sendPacket(new UpdateEntryListPacket(new UpdateEntryListPacket.Change(
+//                            UpdateEntryListPacket.Change.Mode.NOW_PLAYING,
+//                            url
+//                    )));
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//
+//            @Override
+//            public void onPlayerFinish(String url) {
+//                nowPlayingTextField.setText(null);
+//            }
+//
+//        });
 
         // Hub list tab
         {
@@ -252,15 +252,8 @@ public class MusicHubUI extends JFrame {
 
             // TODO: Temp
             if (user.getRole() == Role.ADMIN) {
-                new Thread(() -> {
-
-                    try {
-                        mediaPlayer.play();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                }).start();
+                mediaPlayer = new MediaPlayer(hub);
+                mediaPlayer.connect();
             }
         }
 
@@ -307,14 +300,10 @@ public class MusicHubUI extends JFrame {
         objEntry.fetchData(() -> hubEntryTable.repaint());
 
         entries.put(entry, objEntry);
-
-        mediaPlayer.append(entry);
     }
 
     public void removeEntry(String entry) {
         removeEntryFromTable(entry);
-
-        mediaPlayer.remove(entry);
     }
 
     public void nowPlayingEntry(String entry) {
@@ -332,7 +321,9 @@ public class MusicHubUI extends JFrame {
     }
 
     public void skipEntry() {
-        mediaPlayer.skip();
+        if (mediaPlayer != null) {
+            mediaPlayer.skip();
+        }
     }
 
     private void removeEntryFromTable(String entry) {

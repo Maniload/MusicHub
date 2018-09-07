@@ -1,14 +1,19 @@
 package de.craplezz.musichub.components;
 
+import de.craplezz.musichub.media.MediaServerConnection;
+
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class Hub {
 
     private final String displayName;
     private final UUID hostUserUniqueId;
 
-    private final Queue<Entry> entries = new ArrayDeque<>();
+    private final Queue<Entry> entries = new LinkedBlockingQueue<>();
     private final Map<UUID, User> users = new HashMap<>();
+
+    private MediaServerConnection connection;
 
     public Hub(String displayName, UUID hostUserUniqueId) {
         this.displayName = displayName;
@@ -25,10 +30,18 @@ public class Hub {
 
     public void addEntry(Entry entry) {
         entries.add(entry);
+
+        if (connection != null) {
+            connection.append(entry.getUrl());
+        }
     }
 
     public void removeEntry(Entry entry) {
         entries.remove(entry);
+
+        if (connection != null) {
+            connection.remove(entry.getUrl());
+        }
     }
 
     public Entry nextEntry() {
@@ -49,6 +62,10 @@ public class Hub {
 
     public Collection<User> getUsers() {
         return users.values();
+    }
+
+    public void setMediaServerConnection(MediaServerConnection connection) {
+        this.connection = connection;
     }
 
     @Override
